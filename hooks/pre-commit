@@ -1,0 +1,7 @@
+#!/bin/sh
+# Refuse les chemins hors liste blanche avant chaque commit.
+set -eu
+
+repo_root=$(git rev-parse --show-toplevel)
+cd "$repo_root"
+exec python3 scripts/git_guard.py

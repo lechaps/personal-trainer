@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime
 from pathlib import Path
 import tempfile
 import unittest
@@ -111,6 +112,18 @@ class PersonalTrainerTests(unittest.TestCase):
         file.write_text("2026-11-10 — x\nSC-ID: sc-12345678\nStatut: prévue", encoding="utf8")
         with self.assertRaises(ValueError):
             parse_draft(file)
+
+    def test_publication_title_uses_today_and_preserves_session_date(self):
+        draft = new_draft("2026-11-09", "Test")
+        with patch("personal_trainer.core.datetime") as clock:
+            clock.now.return_value = datetime(2026, 11, 10, 12)
+            self.assertEqual(publish(path=draft, apply=False)["title"], "2026-11-10 draft")
+            with patch("personal_trainer.core.run_notes_jxa", return_value={"status": "created"}) as bridge:
+                publish(path=draft, apply=True)
+        request = bridge.call_args.args[1]
+        self.assertEqual(request["title"], "2026-11-10 draft")
+        self.assertTrue(request["text"].startswith("2026-11-09 — Test\n"))
+        self.assertEqual(str(clock.now.call_args.args[0]), "Europe/Paris")
 
     def test_reject_private_root_inside_git(self):
         from personal_trainer.core import REPO

@@ -30,10 +30,13 @@ function plain(note) {
   if (typeof s !== 'string') throw new Error('Note sans contenu texte exploitable');
   return s;
 }
-function htmlForPlainText(content) {
+function htmlForPlainText(title, content) {
   function escape(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
-  return '<html><body><div style="font-family:-apple-system,Helvetica,sans-serif;white-space:pre-wrap">' +
-    escape(content).replace(/\r\n?/g, '\n').replace(/\n/g, '<br/>') + '</div></body></html>';
+  // Leave font selection to Notes; each paragraph uses its native body style.
+  var lines = content.replace(/\r\n?/g, '\n').split('\n');
+  return '<h1>' + escape(title) + '</h1>' + lines.map(function(line) {
+    return '<div>' + (line ? escape(line) : '<br/>') + '</div>';
+  }).join('');
 }
 function run(argv) {
   if (argv.length !== 2) throw new Error('Arguments: <list|create> <request.json>');
@@ -63,7 +66,7 @@ function run(argv) {
     var existing = notes.filter(function(n) { return exactMarker.test(plain(n)); });
     if (existing.length > 1) throw new Error('Identifiant dupliqué dans Apple Notes : action manuelle requise');
     if (existing.length === 1) return JSON.stringify({status: 'already_exists', note_id: existing[0].id()});
-    var newNote = app.Note({name: title, body: htmlForPlainText(content)});
+    var newNote = app.Note({name: title, body: htmlForPlainText(title, content)});
     folder.notes.push(newNote);
     return JSON.stringify({status: 'created', note_id: newNote.id()});
   }

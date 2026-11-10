@@ -47,6 +47,8 @@ python3 scripts/personal-trainer.py sync --apply
 
 Le cache est enregistré dans `sport/notes.json`, exclu de Git. L'import ne modifie pas les notes Apple. Ces variables d'environnement s'appliquent au terminal courant ; les valeurs par défaut sont `iCloud` et `Sport`.
 
+Les nouvelles publications portent le titre `AAAA-MM-JJ draft` (date de publication, fuseau Europe/Paris). Le contenu conserve la date et le type de séance du brouillon. Le HTML utilise un titre et des paragraphes sans police imposée, pour laisser Apple Notes appliquer ses styles natifs. Les notes déjà publiées restent inchangées.
+
 Pour demander une analyse ou une séance à Codex, indique-lui de lire `.agents/skills/personal-trainer/SKILL.md` et d'utiliser le contexte importé. **L'analyse du contexte par Codex peut transmettre des données privées au service du modèle.** Toute publication doit attendre ta validation explicite.
 
 L'installation ne nécessite aucun commit. Active le hook de protection pour ce dépôt :

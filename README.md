@@ -47,6 +47,8 @@ python3 scripts/personal-trainer.py sync --apply
 
 The cache is saved in `sport/notes.json`, which is excluded from Git. Importing does not change Apple Notes. These environment variables apply to the current terminal; the defaults are `iCloud` and `Sport`.
 
+New publications use the title `YYYY-MM-DD draft` (publication date in the Europe/Paris time zone). The content keeps the session date and type from the draft. The HTML uses a heading and paragraphs without specifying a font, letting Apple Notes apply its native styles. Previously published notes remain unchanged.
+
 To ask Codex for an analysis or a session, tell it to read `.agents/skills/personal-trainer/SKILL.md` and use the imported context. **Analyzing the context with Codex may send private data to the model service.** Publishing must wait for your explicit approval.
 
 Installation does not require a commit. Enable the protection hook for this repository:

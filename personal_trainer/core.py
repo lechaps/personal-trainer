@@ -1,8 +1,7 @@
 """Deterministic, privacy-preserving synchronization with Apple Notes."""
 from __future__ import annotations
 
-from datetime import date, datetime
-from zoneinfo import ZoneInfo
+from datetime import date
 import hashlib
 import json
 import os
@@ -230,7 +229,10 @@ def parse_draft(path: Path) -> dict:
 
 def publish(*, path: Path, apply: bool) -> dict:
     record = parse_draft(path)
-    record["title"] = f"{datetime.now(ZoneInfo('Europe/Paris')).date().isoformat()} draft"
+    record["title"] = "Séance du " + date.fromisoformat(record["title"][:10]).strftime("%d/%m/%Y")
+    record["text"] = "\n".join(
+        line for line in record["text"].splitlines() if not line.startswith("SC-ID:")
+    ) + "\n"
     if not apply:
         return {"status": "dry_run", "sc_id": record["sc_id"], "title": record["title"]}
     result = run_notes_jxa("create", {**notes_request(), **record})

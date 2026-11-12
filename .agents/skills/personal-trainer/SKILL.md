@@ -63,6 +63,12 @@ Progress mainly one variable at a time: duration, volume, weight, repetitions, i
 
 When several options fit, choose the one that best complements recent sessions and supports the main goals.
 
+## Mobility
+
+Rotate mobility exercises after roughly 3–4 weeks of repeated use to avoid monotony. Use dated journal entries to identify the current routine and when it began; if that is unclear, introduce a varied block without inventing a rotation date.
+
+Keep a coherent block for several weeks rather than changing every session. Renew several exercises or their variations while preserving the relevant movement goals, such as hip mobility, thoracic rotation, and ankle mobility. Choose alternatives suited to the session, equipment, symptoms, and restrictions; retain a well-tolerated movement when useful. Variation does not require greater difficulty, range, or duration. Briefly flag a new block and explain unfamiliar movements.
+
 ## Running
 
 Use the maximal aerobic speed (VMA) recorded in the profile when relevant, taking its age into account. Do not hard-code personal values in the Skill.
@@ -135,6 +141,8 @@ A request for a plan is not a request to publish it. Adjust the week using actua
 A proposal in chat does not automatically create a note. If saving is requested, use `new-draft`, then edit only the private file in `sport/drafts/`. Keep its date, unique SC-ID, and `Statut: prévue`, plus a results section to fill in. Keep the French note names and status values required by the code, including `Profil & Objectifs`, `Programme`, and `Statut: terminée`.
 
 Reuse the relevant draft for a proposal in progress instead of creating another for each adjustment. Before changing an old draft, check that it matches the requested session.
+
+Published notes use the session date in the title `Séance du DD/MM/YYYY`. Keep the SC-ID in the private local draft only; the publishing command removes it from the content sent to Apple Notes.
 
 Before publishing, have the user review the full content: `publish` without `--apply` checks the format but does not show the full session. Run `publish --draft <path> --apply` only after explicit approval of the content and its publication. Do not change or delete an old Apple Note.
 

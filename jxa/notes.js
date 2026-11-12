@@ -61,11 +61,22 @@ function run(argv) {
     var title = nonempty(req.title, 'title');
     var content = nonempty(req.text, 'text');
     var marker = 'SC-ID: ' + stableId;
-    if (content.indexOf(marker) < 0) throw new Error('Marqueur SC-ID absent du brouillon');
+    if (content.indexOf('SC-ID:') >= 0) throw new Error('Identifiant interne interdit dans le contenu publié');
     var exactMarker = new RegExp('(^|\\n)' + marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(\\r?\\n|$)');
     var existing = notes.filter(function(n) { return exactMarker.test(plain(n)); });
     if (existing.length > 1) throw new Error('Identifiant dupliqué dans Apple Notes : action manuelle requise');
     if (existing.length === 1) return JSON.stringify({status: 'already_exists', note_id: existing[0].id()});
+    // Recover retries without exposing an internal identifier in the note.
+    var sameTitle = notes.filter(function(n) { return n.name() === title; });
+    function normalized(s) { return s.replace(/\r\n?/g, '\n').split('\n').map(function(line) { return line.trim(); }).filter(function(line) { return line; }).join('\n'); }
+    if (sameTitle.length > 1) throw new Error('Titre de séance ambigu : action manuelle requise');
+    if (sameTitle.length === 1) {
+      var actual = normalized(plain(sameTitle[0]));
+      if (actual === normalized(content) || actual === normalized(title + '\n' + content)) {
+        return JSON.stringify({status: 'already_exists', note_id: sameTitle[0].id()});
+      }
+      throw new Error('Une séance différente porte déjà ce titre : création annulée');
+    }
     var newNote = app.Note({name: title, body: htmlForPlainText(title, content)});
     folder.notes.push(newNote);
     return JSON.stringify({status: 'created', note_id: newNote.id()});

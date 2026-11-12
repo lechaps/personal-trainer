@@ -142,7 +142,7 @@ A proposal in chat does not automatically create a note. If saving is requested,
 
 Reuse the relevant draft for a proposal in progress instead of creating another for each adjustment. Before changing an old draft, check that it matches the requested session.
 
-Published notes use the session date in the title `Séance du DD/MM/YYYY`. Keep the SC-ID in the private local draft only; the publishing command removes it from the content sent to Apple Notes.
+Published notes use the session date in the title `Séance DD/MM/YYYY`. Keep the SC-ID in the private local draft only; the publishing command removes it from the content sent to Apple Notes.
 
 Before publishing, have the user review the full content: `publish` without `--apply` checks the format but does not show the full session. Run `publish --draft <path> --apply` only after explicit approval of the content and its publication. Do not change or delete an old Apple Note.
 

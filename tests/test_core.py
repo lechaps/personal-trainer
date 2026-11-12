@@ -115,11 +115,11 @@ class PersonalTrainerTests(unittest.TestCase):
     def test_publication_uses_session_date_and_hides_internal_id(self):
         draft = new_draft("2026-11-09", "Test")
         original = draft.read_text()
-        self.assertEqual(publish(path=draft, apply=False)["title"], "Séance du 09/11/2026")
+        self.assertEqual(publish(path=draft, apply=False)["title"], "Séance 09/11/2026")
         with patch("personal_trainer.core.run_notes_jxa", return_value={"status": "created"}) as bridge:
             publish(path=draft, apply=True)
         request = bridge.call_args.args[1]
-        self.assertEqual(request["title"], "Séance du 09/11/2026")
+        self.assertEqual(request["title"], "Séance 09/11/2026")
         self.assertTrue(request["text"].startswith("2026-11-09 — Test\n"))
         self.assertNotIn("SC-ID:", request["text"])
         self.assertIn("Statut: prévue", request["text"])

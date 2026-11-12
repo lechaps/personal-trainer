@@ -229,7 +229,7 @@ def parse_draft(path: Path) -> dict:
 
 def publish(*, path: Path, apply: bool) -> dict:
     record = parse_draft(path)
-    record["title"] = "Séance du " + date.fromisoformat(record["title"][:10]).strftime("%d/%m/%Y")
+    record["title"] = "Séance " + date.fromisoformat(record["title"][:10]).strftime("%d/%m/%Y")
     record["text"] = "\n".join(
         line for line in record["text"].splitlines() if not line.startswith("SC-ID:")
     ) + "\n"

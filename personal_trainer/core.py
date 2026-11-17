@@ -16,6 +16,7 @@ import uuid
 REPO = Path(__file__).resolve().parents[1]
 DEFAULT_PRIVATE = REPO / "sport"
 NOTE_DATE = re.compile(r"^(\d{4}-\d{2}-\d{2})(?:\s|\b)")
+PUBLISHED_DATE = re.compile(r"^Séance (\d{2})/(\d{2})/(\d{4})$", re.IGNORECASE)
 SC_ID = re.compile(r"(?m)^SC-ID: (sc-[a-f0-9-]{8,64})\s*$")
 
 
@@ -142,23 +143,6 @@ def import_notes(*, apply: bool, fixture: Path | None = None) -> dict:
     return stats
 
 
-def normalized_status(text: str) -> str:
-    lines = text.splitlines()
-    for line in lines[:18]:
-        if re.match(r"^\s*Statut\s*:", line, flags=re.IGNORECASE):
-            value = line.split(":", 1)[1].strip().lower()
-            value = "".join(c for c in unicodedata.normalize("NFD", value) if unicodedata.category(c) != "Mn")
-            if value in {"terminee", "realisee", "fait", "faite"}:
-                return "terminee"
-            if value in {"prevue", "planifiee"}:
-                return "prevue"
-            if value in {"en cours", "encours"}:
-                return "en_cours"
-            if value in {"annulee", "reportee"}:
-                return "annulee"
-    return "non_confirmee"
-
-
 def context_text(*, last: int = 6) -> str:
     notes = [x for x in load_snapshot()["notes"].values() if not x.get("missing")]
     sections = []
@@ -170,20 +154,26 @@ def context_text(*, last: int = 6) -> str:
             sections.append(f"## {name}\n{matches[0]['text']}")
     sessions = []
     for note in notes:
-        match = NOTE_DATE.match(note["title"])
-        if match:
-            try:
-                date.fromisoformat(match.group(1))
-            except ValueError:
+        title = note["title"].strip()
+        published = PUBLISHED_DATE.fullmatch(title)
+        legacy = NOTE_DATE.match(title)
+        try:
+            if published:
+                day, month, year = map(int, published.groups())
+                session_date = date(year, month, day)
+            elif legacy:
+                session_date = date.fromisoformat(legacy.group(1))
+            else:
                 continue
-            sessions.append((match.group(1), note))
+        except ValueError:
+            continue
+        sessions.append((session_date, note))
     sessions.sort(key=lambda x: (x[0], x[1]["title"]), reverse=True)
     for _, note in sessions[:last]:
-        status = normalized_status(note["text"])
-        sections.append(f"## {note['title']} [statut={status}]\n{note['text']}")
+        sections.append(f"## {note['title']}\n{note['text']}")
     return ("# CONTEXTE PRIVÉ PERSONAL-TRAINER — NE PAS COMMITER\n\n" +
-            "Ne jamais confondre les objectifs prévus avec les résultats réalisés. "
-            "Une note non_confirmée n'atteste pas d'une séance réalisée.\n\n" +
+            "Les notes de séance sont considérées comme réalisées. Ignorer les anciens champs de statut. "
+            "Les résultats réels restent distincts du programme prévu.\n\n" +
             "\n\n".join(sections) + "\n")
 
 
@@ -199,7 +189,7 @@ def new_draft(on: str, kind: str) -> Path:
     draft_dir = private_dir() / "drafts"
     create_private_folder(draft_dir)
     path = draft_dir / f"{on}-{slug(kind)}-{uid}.txt"
-    body = (f"{on} — {kind}\nSC-ID: {uid}\nStatut: prévue\n\n"
+    body = (f"{on} — {kind}\nSC-ID: {uid}\n\n"
             "PROGRAMME PRÉVU\n- Exercice : séries x répétitions, charge, repos, RIR\n\n"
             "RÉSULTATS RÉELS (à compléter sur iPhone)\n- Exercice :\n\n"
             "Ressenti :\nFatigue :\n")
@@ -222,13 +212,13 @@ def parse_draft(path: Path) -> dict:
     if not NOTE_DATE.match(first):
         raise ValueError("Première ligne attendue : AAAA-MM-JJ — Type de séance")
     date.fromisoformat(first[:10])
-    if normalized_status(text) != "prevue":
-        raise ValueError("Seul un brouillon au statut 'prévue' peut être publié")
     return {"sc_id": ids[0], "title": first, "text": text}
 
 
 def publish(*, path: Path, apply: bool) -> dict:
+    path = path.expanduser().resolve()
     record = parse_draft(path)
+    original_text = record["text"]
     record["title"] = "Séance " + date.fromisoformat(record["title"][:10]).strftime("%d/%m/%Y")
     record["text"] = "\n".join(
         line for line in record["text"].splitlines() if not line.startswith("SC-ID:")
@@ -238,4 +228,11 @@ def publish(*, path: Path, apply: bool) -> dict:
     result = run_notes_jxa("create", {**notes_request(), **record})
     if result.get("status") not in {"created", "already_exists"}:
         raise RuntimeError("Réponse Notes de publication inconnue")
+    try:
+        if path.read_text(encoding="utf-8") == original_text:
+            path.unlink(missing_ok=True)
+    except FileNotFoundError:
+        pass
+    except OSError as exc:
+        raise RuntimeError("Note confirmée dans Apple Notes, mais le brouillon local n’a pas pu être supprimé") from exc
     return result

@@ -74,7 +74,7 @@ Useful prompts:
 - **Save a draft:** “Save this proposal as a private draft in sport/drafts/, without publishing it.”
 - **Publish an approved session:** “I approve this session. Publish it to Apple Notes.”
 
-Codex may ask for essential missing details. Review the full session before approving publication. Publishing creates a new note; it does not update an existing one. Record your actual results in Apple Notes and set `Statut: terminée`, then update the history. Private context read by Codex may be sent to the model service, even though `sport/` is excluded from Git.
+Codex may ask for essential missing details. Review the full session before approving publication. Publishing creates a new note; it does not update an existing one. Keep future sessions in local drafts. Publish completed sessions and record your actual results, then update the history. Private context read by Codex may be sent to the model service, even though `sport/` is excluded from Git.
 
 ## Daily commands
 
@@ -98,11 +98,9 @@ python3 scripts/personal-trainer.py publish --draft "/PRIVATE/PATH/draft.txt"
 python3 scripts/personal-trainer.py publish --draft "/PRIVATE/PATH/draft.txt" --apply
 ```
 
-If you edit the published note on your iPhone (`Statut: terminée` plus results), the next `sync --apply` detects the change. The script **never replaces** an existing Apple Note. Publishing the same draft again with `--apply` returns `already_exists` when its SC-ID is found.
+If you edit the published note on your iPhone, the next `sync --apply` detects the change. The script **never replaces** an existing Apple Note. After Apple Notes confirms creation or recognizes an existing copy, `publish --apply` removes the local draft. A dry run or failed publication keeps it.
 
 ## Note format
-
-The names and status values below stay in French because the code expects them. Translating this documentation does not change the parser.
 
 ### Profile and goals
 
@@ -110,11 +108,9 @@ Create one note named exactly `Profil & Objectifs`. A `Programme` note is option
 
 ### Session
 
-The title must start with an ISO date, for example `2026-11-10 — Upper body`. For new sessions created by Codex, keep the `SC-ID: sc-...` line unchanged.
+Published titles use `Séance DD/MM/YYYY`. Titles starting with an ISO date, such as `2026-11-10 — Upper body`, are also supported. The `SC-ID` belongs in the local draft.
 
-After completing a planned session, enter the results and replace `Statut: prévue` with `Statut: terminée` **in Apple Notes**.
-
-Older notes without a status are marked `non_confirmee` (unconfirmed). The system does not assume they were completed.
+Session notes are treated as completed. Legacy status fields are ignored. Use the actual results section to record what you did.
 
 ## Configuration
 
@@ -134,7 +130,7 @@ export PERSONAL_TRAINER_FOLDER="Sport"
 3. Run `sync --apply` twice and check that the second run reports `unchanged`.
 4. Edit the test note on your iPhone, wait for iCloud to sync, then check that a new import reports `changed`.
 5. Create a draft with `new-draft`, edit it locally, then publish to the test folder **after approval**.
-6. Run `publish --apply` again for the same draft: it should return `already_exists`, with no duplicate.
+6. Check that the local draft was removed after Apple Notes confirmed publication.
 7. Read the published note on your iPhone and check line breaks and accented characters. The JXA bridge may need changes depending on your Notes/macOS version.
 8. Once the tests pass, set `PERSONAL_TRAINER_FOLDER=Sport` again.
 
@@ -148,5 +144,5 @@ export PERSONAL_TRAINER_FOLDER="Sport"
 - Asking Codex to analyze the context may send data to the model provider. Keeping data out of Git does not keep it out of the AI service.
 - Access to Apple Notes through JXA is not a stable official API. Check permissions, accounts, locked notes, and behavior on your macOS version.
 - The script returns text only; rich content would need a V2.
-- Duplicate detection when publishing depends on the `SC-ID` marker. If you change or remove it in Apple Notes, detection is no longer guaranteed.
+- A session with the same title and different content blocks a second publication.
 - iCloud sync delays may make an existing note appear to be missing. Do not try creating it again until Notes has finished syncing on the Mac.

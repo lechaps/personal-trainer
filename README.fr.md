@@ -74,7 +74,7 @@ Prompts utiles :
 - **Enregistrer un brouillon :** « Enregistre cette proposition dans un brouillon privé sous sport/drafts/, sans la publier. »
 - **Publier une séance validée :** « Je valide cette séance. Publie-la dans Apple Notes. »
 
-Codex peut demander les précisions indispensables manquantes. Relis la séance complète avant d'autoriser sa publication. La publication crée une nouvelle note ; elle ne met pas à jour une note existante. Saisis tes résultats réels dans Apple Notes et indique `Statut: terminée`, puis actualise l'historique. Le contexte privé lu par Codex peut être transmis au service du modèle, même si `sport/` est exclu de Git.
+Codex peut demander les précisions indispensables manquantes. Relis la séance complète avant d'autoriser sa publication. La publication crée une nouvelle note ; elle ne met pas à jour une note existante. Garde les séances à venir dans les brouillons locaux. Publie les séances réalisées et saisis tes résultats réels, puis actualise l'historique. Le contexte privé lu par Codex peut être transmis au service du modèle, même si `sport/` est exclu de Git.
 
 ## Commandes quotidiennes
 
@@ -98,11 +98,9 @@ python3 scripts/personal-trainer.py publish --draft "/CHEMIN/PRIVE/brouillon.txt
 python3 scripts/personal-trainer.py publish --draft "/CHEMIN/PRIVE/brouillon.txt" --apply
 ```
 
-Si tu modifies la note publiée sur iPhone (`Statut: terminée` et résultats), le prochain `sync --apply` détecte le changement. Le script **ne remplace jamais** une note Apple existante. Publier à nouveau le même brouillon avec `--apply` renvoie `already_exists` lorsque son SC-ID est trouvé.
+Si tu modifies la note publiée sur iPhone, le prochain `sync --apply` détecte le changement. Le script **ne remplace jamais** une note Apple existante. Après confirmation de la création ou reconnaissance d’une copie existante dans Apple Notes, `publish --apply` supprime le brouillon local. Une simulation ou un échec de publication le conserve.
 
 ## Format des notes
-
-Les noms et valeurs de statut ci-dessous restent en français, car le code les attend ainsi. Traduire la documentation ne modifie pas le mécanisme de lecture.
 
 ### Profil et objectifs
 
@@ -110,11 +108,9 @@ Crée une note nommée exactement `Profil & Objectifs`. Une note `Programme` est
 
 ### Séance
 
-Le titre doit commencer par une date ISO, par exemple `2026-11-10 — Haut du corps`. Pour les nouvelles séances créées par Codex, conserve la ligne `SC-ID: sc-...` inchangée.
+Les titres publiés suivent le format `Séance JJ/MM/AAAA`. Les titres qui commencent par une date ISO, comme `2026-11-10 — Haut du corps`, sont également reconnus. Le `SC-ID` reste dans le brouillon local.
 
-Après avoir terminé une séance prévue, saisis les résultats et remplace `Statut: prévue` par `Statut: terminée` **dans Apple Notes**.
-
-Les anciennes notes sans statut sont marquées `non_confirmee`. Le système ne suppose pas qu'elles ont été réalisées.
+Les notes de séance sont considérées comme réalisées. Les anciens champs de statut sont ignorés. Utilise la rubrique des résultats réels pour consigner ce que tu as fait.
 
 ## Configuration
 
@@ -134,7 +130,7 @@ export PERSONAL_TRAINER_FOLDER="Sport"
 3. Lance `sync --apply` deux fois et vérifie que la deuxième exécution indique `unchanged`.
 4. Modifie la note de test sur iPhone, attends la synchronisation iCloud, puis vérifie qu'un nouvel import indique `changed`.
 5. Crée un brouillon avec `new-draft`, modifie-le localement, puis publie dans le dossier de test **après validation**.
-6. Relance `publish --apply` pour le même brouillon : il doit renvoyer `already_exists`, sans doublon.
+6. Vérifie que le brouillon local a été supprimé après la confirmation de publication.
 7. Relis la note publiée sur iPhone et vérifie les sauts de ligne et les caractères accentués. Le pont JXA peut nécessiter des adaptations selon la version de Notes/macOS.
 8. Une fois les tests réussis, rétablis `PERSONAL_TRAINER_FOLDER=Sport`.
 
@@ -148,5 +144,5 @@ export PERSONAL_TRAINER_FOLDER="Sport"
 - Faire analyser le contexte par Codex peut transmettre les données au fournisseur du modèle. Garder les données hors de Git ne les garde pas hors du service d'IA.
 - L'accès à Apple Notes via JXA n'est pas une API officielle stable. Vérifie les permissions, les comptes, les notes verrouillées et le comportement sur ta version de macOS.
 - Le script renvoie uniquement du texte ; les contenus enrichis nécessiteraient une V2.
-- La détection des doublons lors de la publication dépend du marqueur `SC-ID`. Si tu le modifies ou le supprimes dans Apple Notes, cette détection n'est plus garantie.
+- Une séance portant le même titre avec un contenu différent bloque une seconde publication.
 - Les délais de synchronisation iCloud peuvent donner l'impression qu'une note existante est absente. Ne tente pas de la créer à nouveau avant la fin de la synchronisation de Notes sur le Mac.

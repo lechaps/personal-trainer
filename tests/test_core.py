@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from personal_trainer.core import (
     context_text, digest, import_notes, load_snapshot, merge_snapshot,
-    new_draft, normalized_status, parse_draft, private_dir, publish,
+    new_draft, parse_draft, private_dir, publish,
 )
 
 
@@ -69,14 +69,20 @@ class PersonalTrainerTests(unittest.TestCase):
         self.assertEqual(result["new"], 1)
         self.assertFalse((self.private / "notes.json").exists())
 
-    def test_context_never_claims_unknown_session_completed(self):
+    def test_context_includes_published_and_legacy_sessions_regardless_of_status(self):
         import_notes(apply=True, fixture=self.fixture([
             note("p", "Profil & Objectifs", "Sport amateur"),
-            note("s", "2026-11-09 — Haut du corps", "Développé 3x8"),
+            note("old", "2026-11-09 — Haut du corps", "Développé 3x8"),
+            note("new", "Séance 10/11/2026", "Statut: prévue\nSquat 3x8"),
+            note("invalid", "Séance 31/11/2026", "Date invalide"),
         ]))
-        c = context_text()
-        self.assertIn("[statut=non_confirmee]", c)
-        self.assertIn("Sport amateur", c)
+        context = context_text(last=2)
+        self.assertIn("## Séance 10/11/2026\nStatut: prévue\nSquat 3x8", context)
+        self.assertIn("## 2026-11-09 — Haut du corps\nDéveloppé 3x8", context)
+        self.assertIn("Sport amateur", context)
+        self.assertNotIn("Date invalide", context)
+        self.assertIn("Squat 3x8", context_text(last=1))
+        self.assertNotIn("Développé 3x8", context_text(last=1))
 
     def test_context_includes_combined_profile_and_optional_programme(self):
         import_notes(apply=True, fixture=self.fixture([
@@ -99,12 +105,24 @@ class PersonalTrainerTests(unittest.TestCase):
         draft = new_draft("2026-11-10", "Haut du corps")
         record = parse_draft(draft)
         self.assertIn("SC-ID", record["text"])
-        self.assertEqual(normalized_status(record["text"]), "prevue")
         self.assertEqual(publish(path=draft, apply=False)["status"], "dry_run")
+        self.assertTrue(draft.exists())
         with patch("personal_trainer.core.run_notes_jxa", return_value={"status": "created", "note_id": "n-1"}) as mocked:
             result = publish(path=draft, apply=True)
         self.assertEqual(result["status"], "created")
         self.assertEqual(mocked.call_args.args[0], "create")
+        self.assertFalse(draft.exists())
+
+    def test_retry_removes_draft_only_after_apple_notes_confirms(self):
+        draft = new_draft("2026-11-10", "Test")
+        with patch("personal_trainer.core.run_notes_jxa", side_effect=RuntimeError("Échec Notes")):
+            with self.assertRaises(RuntimeError):
+                publish(path=draft, apply=True)
+        self.assertTrue(draft.exists())
+
+        with patch("personal_trainer.core.run_notes_jxa", return_value={"status": "already_exists"}):
+            self.assertEqual(publish(path=draft, apply=True)["status"], "already_exists")
+        self.assertFalse(draft.exists())
 
     def test_reject_draft_outside_private_area(self):
         file = Path(self.tmp.name) / "stranger.txt"
@@ -114,7 +132,7 @@ class PersonalTrainerTests(unittest.TestCase):
 
     def test_publication_uses_session_date_and_hides_internal_id(self):
         draft = new_draft("2026-11-09", "Test")
-        original = draft.read_text()
+        original = parse_draft(draft)
         self.assertEqual(publish(path=draft, apply=False)["title"], "Séance 09/11/2026")
         with patch("personal_trainer.core.run_notes_jxa", return_value={"status": "created"}) as bridge:
             publish(path=draft, apply=True)
@@ -122,9 +140,8 @@ class PersonalTrainerTests(unittest.TestCase):
         self.assertEqual(request["title"], "Séance 09/11/2026")
         self.assertTrue(request["text"].startswith("2026-11-09 — Test\n"))
         self.assertNotIn("SC-ID:", request["text"])
-        self.assertIn("Statut: prévue", request["text"])
-        self.assertEqual(draft.read_text(), original)
-        self.assertEqual(request["sc_id"], parse_draft(draft)["sc_id"])
+        self.assertNotIn("Statut:", request["text"])
+        self.assertEqual(request["sc_id"], original["sc_id"])
 
     def test_reject_private_root_inside_git(self):
         from personal_trainer.core import REPO
@@ -142,11 +159,6 @@ class PersonalTrainerTests(unittest.TestCase):
         from personal_trainer.core import REPO
         with patch.dict(os.environ, {"PERSONAL_TRAINER_PRIVATE_DIR": str(REPO / "sport")}):
             self.assertEqual(private_dir(), REPO / "sport")
-
-    def test_status_parses_accents(self):
-        self.assertEqual(normalized_status("Statut: terminée"), "terminee")
-        self.assertEqual(normalized_status("Statut: prévue"), "prevue")
-        self.assertEqual(normalized_status("Sans statut"), "non_confirmee")
 
 
 if __name__ == "__main__":

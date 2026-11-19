@@ -8,7 +8,7 @@ ROOT_FILES = {"README.md", "README.fr.md", "AGENTS.md", ".gitignore", "hooks/pre
 ALLOWED_SOURCE = {"jxa/notes.js", "personal_trainer/__init__.py", "personal_trainer/core.py",
                   "scripts/personal-trainer.py", "scripts/git_guard.py"}
 SKILL_FILES = {".agents/skills/personal-trainer/SKILL.md",
-               ".agents/skills/personal-trainer/references/progression.md"}
+               ".agents/skills/personal-trainer/references/journal.md"}
 
 
 def allowed(path: str) -> bool:

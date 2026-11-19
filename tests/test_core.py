@@ -138,7 +138,10 @@ class PersonalTrainerTests(unittest.TestCase):
             publish(path=draft, apply=True)
         request = bridge.call_args.args[1]
         self.assertEqual(request["title"], "Séance 09/11/2026")
-        self.assertTrue(request["text"].startswith("2026-11-09 — Test\n"))
+        self.assertTrue(request["text"].startswith("Type : Test\n- Exercice :"))
+        self.assertNotIn("PROGRAMME PRÉVU", request["text"])
+        self.assertNotIn("2026-11-09 — Test", request["text"])
+        self.assertNotIn("Séance 09/11/2026", request["text"])
         self.assertNotIn("SC-ID:", request["text"])
         self.assertNotIn("Statut:", request["text"])
         self.assertEqual(request["sc_id"], original["sc_id"])

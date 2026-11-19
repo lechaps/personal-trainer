@@ -219,10 +219,13 @@ def publish(*, path: Path, apply: bool) -> dict:
     path = path.expanduser().resolve()
     record = parse_draft(path)
     original_text = record["text"]
+    kind = record["title"][10:].strip().lstrip("—–-").strip()
     record["title"] = "Séance " + date.fromisoformat(record["title"][:10]).strftime("%d/%m/%Y")
-    record["text"] = "\n".join(
-        line for line in record["text"].splitlines() if not line.startswith("SC-ID:")
-    ) + "\n"
+    body = "\n".join(
+        line for line in original_text.splitlines()[1:]
+        if not line.startswith("SC-ID:") and line.strip() != "PROGRAMME PRÉVU"
+    ).lstrip("\n")
+    record["text"] = f"Type : {kind}\n{body}\n"
     if not apply:
         return {"status": "dry_run", "sc_id": record["sc_id"], "title": record["title"]}
     result = run_notes_jxa("create", {**notes_request(), **record})

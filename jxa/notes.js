@@ -77,7 +77,8 @@ function run(argv) {
       }
       throw new Error('Une séance différente porte déjà ce titre : création annulée');
     }
-    var newNote = app.Note({name: title, body: htmlForPlainText(title, content)});
+    // Notes derives its name from the first body line; setting both duplicates the title.
+    var newNote = app.Note({body: htmlForPlainText(title, content)});
     folder.notes.push(newNote);
     return JSON.stringify({status: 'created', note_id: newNote.id()});
   }
